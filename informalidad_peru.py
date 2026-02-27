@@ -108,31 +108,68 @@ def intro():
 
 def eda_page():
     st.title("📊 Análisis Exploratorio de Datos (EDA)")
-    st.write("Visualizaciones clave de la muestra de 91,725 observaciones.")
+    st.write("Análisis de los determinantes de la informalidad basado en la muestra filtrada (91,725 observaciones).")
     
-    t1, t2, t3 = st.tabs(["Distribución de Informalidad", "Relación Educación/Edad", "Análisis Sectorial"])
+    # Organizamos el EDA en 3 dimensiones de análisis
+    tab1, tab2, tab3 = st.tabs(["Estructura de la Muestra", "Capital Humano y Demografía", "Factores Productivos"])
     
-    with t1:
-        st.subheader("Prevalencia de la Informalidad")
-        try:
-            st.image('data/eda_target.png', caption="Distribución de la variable dependiente (Formal vs Informal)")
-        except:
-            st.info("💡 Sugerencia: Carga un gráfico de barras mostrando la proporción de informales en la muestra.")
-            
-    with t2:
-        st.subheader("Informalidad por Nivel Educativo")
-        try:
-            st.image('data/eda_educacion.png', caption="Tasa de informalidad según grado académico")
-        except:
-            st.info("💡 Sugerencia: Un gráfico de barras apiladas (stacked bar chart) de Educación vs Informalidad.")
-            
-    with t3:
-        st.subheader("Mapa de Calor de Correlaciones")
-        try:
-            st.image('data/eda_heatmap.png', caption="Correlación entre variables numéricas")
-        except:
-            st.info("💡 Sugerencia: Un Heatmap para mostrar la relación entre Edad, Horas y la Informalidad.")
+    with tab1:
+        col1, col2 = st.columns(2)
+        with col1:
+            st.subheader("Prevalencia de la Informalidad")
+            try:
+                st.image('data/eda_target.png', caption="Distribución de la variable dependiente")
+            except:
+                st.warning("Archivo 'eda_target.png' no encontrado.")
+        
+        with col2:
+            st.subheader("Correlaciones del Modelo")
+            try:
+                st.image('data/eda_heatmap.png', caption="Interacción entre variables explicativas")
+            except:
+                st.warning("Archivo 'eda_heatmap.png' no encontrado.")
+        st.info("💡 La matriz de correlación permite descartar problemas graves de multicolinealidad entre los regresores numéricos.")
 
+    with tab2:
+        col3, col4 = st.columns(2)
+        with col3:
+            st.subheader("Impacto de la Educación")
+            try:
+                # Usamos el nuevo gráfico de probabilidad por educación
+                st.image('data/educacion_prob.png', caption="Probabilidad de informalidad por nivel alcanzado")
+            except:
+                # Fallback al gráfico original si no está el nuevo
+                st.image('data/eda_educacion.png', caption="Tasa de informalidad según grado académico")
+        
+        with col4:
+            st.subheader("Perfil de Edad")
+            try:
+                st.image('data/edad_densidad.png', caption="Densidad de informalidad por ciclo de vida")
+            except:
+                st.info("Carga 'edad_densidad.png' para ver la distribución por edades.")
+        
+        st.markdown("""
+        **Hallazgo:** Se observa una relación inversa entre el capital humano y la probabilidad de informalidad. 
+        Asimismo, la densidad de edad muestra que la informalidad afecta desproporcionadamente a los extremos del ciclo laboral.
+        """)
+
+    with tab3:
+        col5, col6 = st.columns(2)
+        with col5:
+            st.subheader("Tamaño de la Unidad Económica")
+            try:
+                st.image('data/empresa_prob.png', caption="Relación entre tamaño de empresa e informalidad")
+            except:
+                st.warning("Archivo 'empresa_prob.png' no encontrado.")
+        
+        with col6:
+            st.subheader("Intensidad de la Jornada")
+            try:
+                st.image('data/horas_boxplot.png', caption="Dispersión de horas trabajadas semanales")
+            except:
+                st.warning("Archivo 'horas_boxplot.png' no encontrado.")
+        
+        st.success("✅ El análisis descriptivo confirma que la escala de la empresa y la educación son los predictores con mayor varianza explicada.")
 def inferencia_stata():
     st.title("📈 3. Resultados Econométricos (Stata)")
     
