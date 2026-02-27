@@ -63,6 +63,29 @@ def procesar_inputs(edad, horas, genero, urbano, educ, idioma, cat_ocup, sector,
     
     return np.array([list(input_data.values())])
 
+def clean_stata_table(df, tipo='coef'):
+    """Limpia las tablas de outreg2 para que sean legibles en Streamlit"""
+    if df.empty: return df
+    
+    # 1. Encontrar la fila de encabezados
+    if 'VARIABLES' in df.values:
+        idx = df[df.iloc[:, 0] == 'VARIABLES'].index[0]
+        df.columns = df.iloc[idx]
+        df = df.iloc[idx + 1:].reset_index(drop=True)
+    
+    # 2. Filtrar filas de error (NaNs en la primera columna)
+    df = df[df['VARIABLES'].notna()]
+    
+    # 3. Limpiar nombres (quitar el prefijo 'o.' de Stata)
+    df['VARIABLES'] = df['VARIABLES'].str.replace('o.', '', regex=False)
+    
+    # 4. Manejar las bases de comparación (-)
+    # En RRR la base es 1, en Coef/Marginales es 0
+    val_base = "1.00 (Base)" if tipo == 'rrr' else "0.00 (Base)"
+    df = df.replace('-', val_base)
+    
+    return df.fillna("")
+
 # --- PÁGINAS ---
 
 def intro():
@@ -77,7 +100,7 @@ def intro():
         st.markdown("""
         ### Integrantes:
         * Luis Mauricio Aguirre Stornaiuolo
-        * Tilsa Morgana Tejeda Becerra
+        * Tilsa Norgana Tejeda Becerra
         * Gary Magno Alca Chipana
         * Edwin Joel Quispe Mamani
         
@@ -170,6 +193,7 @@ def eda_page():
                 st.warning("Archivo 'horas_boxplot.png' no encontrado.")
         
         st.success("✅ El análisis descriptivo confirma que la escala de la empresa y la educación son los predictores con mayor varianza explicada.")
+
 def inferencia_stata():
     st.title("📈 3. Resultados Econométricos (Stata)")
     
@@ -224,6 +248,60 @@ def inferencia_stata():
         except:
             st.error("No se encontró el archivo 'grafico_coeficientes.png'.")
 
+def multinomial_page():
+    st.title("📑 Modelo Multinomial (Inferencia en Stata)")
+    st.markdown("""
+    Esta sección presenta la **segmentación del mercado laboral** en 4 categorías. 
+    A diferencia del modelo binario, aquí distinguimos si los factores afectan de forma 
+    distinta a los asalariados informales y a los independientes.
+    """)
+
+    t1, t2 = st.tabs(["📊 Análisis Visual", "📋 Tablas de Resultados"])
+
+    with t1:
+        st.subheader("Probabilidades Predichas por Educación")
+        try:
+            st.image('data/probabilidades_multi.png', use_container_width=True)
+            st.caption("Nota: Se observa cómo la probabilidad de formalidad aumenta exponencialmente con la educación universitaria.")
+        except:
+            st.info("Sube 'probabilidades_multi.png' a la carpeta data.")
+
+        st.divider()
+        
+        st.subheader("Comparación de Coeficientes")
+        try:
+            st.image('data/coefplot_multi.png', use_container_width=True)
+        except:
+            st.info("Sube 'coefplot_multi.png' a la carpeta data.")
+
+    with t2:
+        st.subheader("Relative Risk Ratios (RRR)")
+        try:
+            df_rrr = pd.read_csv('data/resultados_multi_rrr.csv')
+            st.dataframe(clean_stata_table(df_rrr, tipo='rrr'), hide_index=True, use_container_width=True)
+        except:
+            st.warning("No se encontró el archivo de RRR.")
+
+        st.divider()
+        
+        st.subheader("Efectos Marginales (Puntos Porcentuales)")
+        c1, c2 = st.columns(2)
+        with c1:
+            st.markdown("**Asalariado Informal**")
+            try:
+                df_a = pd.read_csv('data/marg_asal_inf.csv')
+                st.dataframe(clean_stata_table(df_a), hide_index=True)
+            except:
+                st.caption("Carga 'marg_asal_inf.csv'")
+        
+        with c2:
+            st.markdown("**Independiente Informal**")
+            try:
+                # Si lograste generar este, el código ya lo lee
+                df_b = pd.read_csv('data/marg_indep_inf.csv')
+                st.dataframe(clean_stata_table(df_b), hide_index=True)
+            except:
+                st.caption("Carga 'marg_indep_inf.csv'")
 
 def modelo_logit_py():
     st.title("🐍 4. Modelo Logit (Python - Sklearn)")
@@ -385,13 +463,15 @@ def despedida():
 
     st.balloons()
 # --- NAVEGACIÓN ---
+# --- NAVEGACIÓN ACTUALIZADA ---
 pg = st.navigation([
     st.Page(intro, title="1. Portada", icon="🏠"),
     st.Page(eda_page, title="2. Análisis Exploratorio", icon="📊"),
-    st.Page(inferencia_stata, title="3. Resultados Stata", icon="📈"),
-    st.Page(modelo_logit_py, title="4. Logit Python", icon="🐍"),
-    st.Page(modelo_dl_page, title="5. Deep Learning", icon="🧠"),
-    st.Page(despedida, title="6. Finalizar", icon="✨") # Nueva página de cierre
+    st.Page(inferencia_stata, title="3. Logit Binario (Stata)", icon="📈"),
+    st.Page(multinomial_page, title="4. Modelo Multinomial (Stata)", icon="🗂️"), # Nueva sección
+    st.Page(modelo_logit_py, title="5. Logit Python", icon="🐍"),
+    st.Page(modelo_dl_page, title="6. Deep Learning", icon="🧠"),
+    st.Page(despedida, title="7. Finalizar", icon="✨")
 ])
 
 pg.run()
